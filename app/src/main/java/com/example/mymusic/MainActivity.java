@@ -22,22 +22,20 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener,SeekBar.OnSeekBarChangeListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener, SeekBar.OnSeekBarChangeListener {
 
-    ImageButton backBtn, forvardBtn, folderBtn, rndBtn;
-    public static SeekBar timeScroll;
-    TextView rndText, trackTxt, folderTxt, timeTxt, longTxt;
-    ImageView playImg;
-
+    //private ImageButton backBtn, forvardBtn, folderBtn, rndBtn;
+    private SeekBar timeScroll;
+    private TextView rndText, trackTxt, folderTxt, timeTxt, longTxt;
+    private ImageView playImg;
+    private Thread timeThread;
     public static MediaPlayer mediaPlayer;
-    AudioManager am;
 
     private Boolean rnd = false;
-    private int playStop = 0;
     private int curTreckID = 0;
 
-    public static ArrayList<MusicList> myMysicList;
-    FolderClass directoryList;
+    public static ArrayList<String> myMysicList;
+    private FolderClass directoryList;
     private SharedPreferences saveMusicInfo;
 
     @Override
@@ -46,36 +44,38 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        saveMusicInfo=getSharedPreferences(getString(R.string.app_name),MODE_PRIVATE);
+        saveMusicInfo = getSharedPreferences(getString(R.string.app_name), MODE_PRIVATE);
+
+        ImageButton backBtn, forvardBtn, folderBtn, rndBtn;
 
         directoryList = new FolderClass();
 
-        timeScroll = (SeekBar) findViewById(R.id.seekBar);
+        timeScroll =(SeekBar) findViewById(R.id.seekBar);
         timeScroll.setOnSeekBarChangeListener(this);
 
-        rndText = (TextView) findViewById(R.id.rndText);
-        trackTxt = (TextView) findViewById(R.id.trackText);
-        folderTxt = (TextView) findViewById(R.id.folderText);
-        timeTxt = (TextView) findViewById(R.id.timeTxt);
-        longTxt = (TextView) findViewById(R.id.longText);
+        rndText =(TextView) findViewById(R.id.rndText);
+        trackTxt =(TextView) findViewById(R.id.trackText);
+        folderTxt =(TextView) findViewById(R.id.folderText);
+        timeTxt = (TextView)findViewById(R.id.timeTxt);
+        longTxt = (TextView)findViewById(R.id.longText);
 
-        rndBtn = (ImageButton) findViewById(R.id.rndBtn);
+        rndBtn =(ImageButton) findViewById(R.id.rndBtn);
         rndBtn.setOnClickListener(this);
-        backBtn = (ImageButton) findViewById(R.id.backbtn);
+        backBtn =(ImageButton) findViewById(R.id.backbtn);
         backBtn.setOnClickListener(this);
-        forvardBtn = (ImageButton) findViewById(R.id.forvardBtn);
+        forvardBtn =(ImageButton) findViewById(R.id.forvardBtn);
         forvardBtn.setOnClickListener(this);
-        folderBtn = (ImageButton) findViewById(R.id.folderBtn);
+        folderBtn =(ImageButton) findViewById(R.id.folderBtn);
         folderBtn.setOnClickListener(this);
         folderBtn.setImageResource(R.drawable.fold);
 
-        playImg = (ImageView) findViewById(R.id.imageView);
+        playImg =(ImageView) findViewById(R.id.imageView);
         playImg.setOnClickListener(this);
         playImg.setImageResource(R.drawable.playgreen);
 
-        myMysicList = new ArrayList<MusicList>();
+        myMysicList = new ArrayList<>();
         rndText.setVisibility(View.INVISIBLE);
-        am = (AudioManager) getSystemService(AUDIO_SERVICE);
+        AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
         loadStartMusic();
     }
 
@@ -102,28 +102,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void loadStartMusic() {
-        String s1,s2,s3;
-        //TODO сделать защиту если не будет папки или файла
-        s2=saveMusicInfo.getString(getString(R.string.saveFolderName),getString(R.string.defaultFolder));
-        s1=saveMusicInfo.getString(getString(R.string.savePathMusic),getString(R.string.defaultDirectory));
-        directoryList.createList(s1,s2);
-        if (saveMusicInfo.contains(getString(R.string.saveMusicName))){
-            s3=saveMusicInfo.getString(getString(R.string.saveMusicName),"");
-            if (directoryList.findId(s3)!=-1) curTreckID=directoryList.findId(s3);
-        }
-        loadMusic();
+        String fileDir = saveMusicInfo.getString(getString(R.string.savePathMusic), "");
+        File inputFile = new File(fileDir);
+        if (inputFile.exists()) {
+            curTreckID=directoryList.createList(inputFile.getParent(),inputFile.getName());
+            loadMusic();
+        } else FolderClass.fileError(this);
     }
 
-    void saveMusicForRestar(){
-        File imagesPath = new File(myMysicList.get(curTreckID).path);
-        SharedPreferences.Editor editor = saveMusicInfo.edit();
-        editor.putString(getString(R.string.saveFolderName),myMysicList.get(curTreckID).folder);
-        editor.putString(getString(R.string.savePathMusic),imagesPath.getParent());
-        editor.putString(getString(R.string.saveMusicName),myMysicList.get(curTreckID).name);
-        editor.apply();
+    void saveMusicForRestar() {
+        if (myMysicList.size() > 0) {
+            SharedPreferences.Editor editor = saveMusicInfo.edit();
+            editor.putString(getString(R.string.savePathMusic), myMysicList.get(curTreckID));
+            editor.apply();
+        }
     }
 
     private void navigation(int id) {
+        timeThread.interrupt();
         if (rnd) {
             Random rn = new Random();
             curTreckID = rn.nextInt(myMysicList.size());
@@ -151,18 +147,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void rndSelect() {
-        if (rnd) {
-            rndText.setVisibility(View.INVISIBLE);
-            rnd = false;
-        } else {
-            rndText.setVisibility(View.VISIBLE);
-            rnd = true;
-        }
+        if (rnd)  rndText.setVisibility(View.INVISIBLE);
+         else  rndText.setVisibility(View.VISIBLE);
+        rnd=!rnd;
     }
 
     private void releaseMP() {
         if (mediaPlayer != null) {
             try {
+                timeThread.interrupt();
                 mediaPlayer.release();
                 mediaPlayer = null;
             } catch (Exception e) {
@@ -172,104 +165,89 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void loadMusic() {
-        releaseMP();
-        try {
-            mediaPlayer = new MediaPlayer();
-            mediaPlayer.setDataSource(myMysicList.get(curTreckID).path);
-            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            mediaPlayer.prepare();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        if (mediaPlayer == null)
-            return;
-        mediaPlayer.setOnCompletionListener(this);
-        loadInfo();
-        playStop = 0;
-        switchPlayStop();
-        timeScroll.setProgress(0);
+        if (myMysicList.size() > 0) {
+            releaseMP();
+            try {
+                mediaPlayer = new MediaPlayer();
+                mediaPlayer.setDataSource(myMysicList.get(curTreckID));
+                mediaPlayer.prepare();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            mediaPlayer.setOnCompletionListener(this);
+            loadInfo();
+            switchPlayStop();
+            timeScroll.setProgress(0);
+            saveMusicForRestar();
+        } else FolderClass.fileError(this);
     }
 
     private void loadInfo() {
-        trackTxt.setText(myMysicList.get(curTreckID).name);
-        folderTxt.setText(myMysicList.get(curTreckID).folder);
+        trackTxt.setText(FolderClass.getFileName(myMysicList.get(curTreckID)));
+        folderTxt.setText(FolderClass.getFolderName(myMysicList.get(curTreckID)));
         longTxt.setText(TimeBar.getTime(mediaPlayer.getDuration()));
         timeScroll.setMax(mediaPlayer.getDuration());
     }
 
     private void switchPlayStop() {
-        if (mediaPlayer == null) loadMusic();
-        else
-            switch (playStop) {
-                case (1):
-                    playStop = 0;
-                    playImg.setImageResource(R.drawable.playgreen);
-                    mediaPlayer.pause();
-                    break;
-                case (0):
-                    playStop = 1;
-                    playImg.setImageResource(R.drawable.stop3);
-                    mediaPlayer.start();
-                    refreshPlayTime();
-                    break;
+        if (mediaPlayer != null){
+            if (mediaPlayer.isPlaying()) {
+                playImg.setImageResource(R.drawable.playgreen);
+                mediaPlayer.pause();
+            } else {
+                playImg.setImageResource(R.drawable.stop3);
+                mediaPlayer.start();
+                refreshPlayTime();
             }
+        } else FolderClass.fileError(this);
     }
 
     @Override
     public void onCompletion(MediaPlayer mediaPlayer) {
         navigation(1);
-        playStop = 0;
-        switchPlayStop();
     }
 
     @Override
-    public void onPrepared(MediaPlayer mediaPlayer) {
-        mediaPlayer.start();
-    }
+    public void onPrepared(MediaPlayer mediaPlayer){}
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mediaPlayer != null)
-            mediaPlayer.stop();
         releaseMP();
-        System.exit(0);
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
-        saveMusicForRestar();
-    }
+    public void onProgressChanged(SeekBar seekBar, int i, boolean b) {timeTxt.setText(TimeBar.getTime(i));}
 
     @Override
-    public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-        timeTxt.setText(TimeBar.getTime(i));
-    }
-
-    @Override
-    public void onStartTrackingTouch(SeekBar seekBar) {
-
-    }
+    public void onStartTrackingTouch(SeekBar seekBar) {}
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
         mediaPlayer.seekTo(seekBar.getProgress());
     }
 
-    private void refreshPlayTime(){
-        Thread t = new Thread(new Runnable() {
+    private void refreshPlayTime() {
+        timeThread = new Thread(new Runnable() {
             public void run() {
                 try {
-                    while (playStop!=0){
-                    runOnUiThread(TimeBar.updateProgressTime);
-                    TimeUnit.SECONDS.sleep(1);}
+                    while (mediaPlayer.isPlaying()) {
+                        runOnUiThread(updateProgressTime);
+                        TimeUnit.SECONDS.sleep(1);
+                    }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
         });
-        t.start();
+        timeThread.start();
     }
+
+    private Runnable updateProgressTime = new Runnable() {
+        public void run() {
+            timeScroll.setProgress(MainActivity.mediaPlayer.getCurrentPosition());
+        }
+    };
+
 }
 

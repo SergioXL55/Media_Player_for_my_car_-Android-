@@ -1,4 +1,4 @@
-package com.example.mymusic.adapter;
+package com.example.mymusic.radio.adapter;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -7,26 +7,25 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
-
 import com.example.mymusic.R;
 
-import java.io.File;
 import java.util.ArrayList;
 
-public class BoxAdapter extends BaseAdapter {
-    private LayoutInflater lInflater;
-    private ArrayList<Product> objects;
 
-    public BoxAdapter(Context context, ArrayList<Product> products) {
-        objects = products;
+public class RadioListAdapter extends BaseAdapter {
+    private LayoutInflater lInflater;
+    private ArrayList<RadioStation> objects;
+
+    public RadioListAdapter(Context context, ArrayList<RadioStation> products) {
+         objects = products;
         lInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
-
     @Override
     public int getCount() {
         return objects.size();
     }
-    @Override
+
+      @Override
     public Object getItem(int position) {
         return objects.get(position);
     }
@@ -38,18 +37,15 @@ public class BoxAdapter extends BaseAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        // используем созданные, но не используемые view
         View view = convertView;
-        if (view == null) {
-            view = lInflater.inflate(R.layout.item, parent, false);
-        }
-        Product p = getProduct(position);
-        File inputPath=new File(p.path);
-        ((TextView) view.findViewById(R.id.nameFold)).setText(inputPath.getName());
-        ((ImageView) view.findViewById(R.id.foldMus)).setImageResource(p.image);
-        return view;
+        if (view == null) view = lInflater.inflate(R.layout.radiolist, parent, false);
+        RadioStation p = getProduct(position);
+        ((TextView) view.findViewById(R.id.radioTxt)).setText(p.txt);
+        ((ImageView) view.findViewById(R.id.radioIco)).setImageResource(p.radioIco);
+        ((ImageView) view.findViewById(R.id.radioPlay)).setImageResource(p.radioPlay);
+    return view;
     }
-    Product getProduct(int position) {
-        return ((Product) getItem(position));
+    private RadioStation getProduct(int position) {
+        return ((RadioStation) getItem(position));
     }
 }
