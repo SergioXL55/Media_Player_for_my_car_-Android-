@@ -79,7 +79,7 @@
     <ListView
         android:id="@+id/radioListView"
         android:layout_width="0dp"
-        android:layout_height="359dp"
+        android:layout_height="424dp"
         tools:layout_editor_absoluteX="8dp"
         tools:layout_editor_absoluteY="8dp" />
 
