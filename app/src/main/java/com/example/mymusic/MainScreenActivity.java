@@ -1,8 +1,8 @@
 package com.example.mymusic;
 
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.ImageButton;
 
@@ -16,7 +16,6 @@ public class MainScreenActivity extends AppCompatActivity implements View.OnClic
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_screen);
-
         radioBtn=(ImageButton) findViewById(R.id.radioBtn);
         radioBtn.setOnClickListener(this);
         musicBtn=(ImageButton) findViewById(R.id.musicButton);

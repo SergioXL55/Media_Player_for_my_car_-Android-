@@ -1,9 +1,11 @@
 package com.example.mymusic;
 
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
-import android.media.AudioManager;
+import android.content.res.Resources;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -14,6 +16,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.example.mymusic.folder.FolderClass;
+import com.example.mymusic.notification.MainNotification;
 import com.example.mymusic.time.TimeBar;
 
 import java.io.File;
@@ -24,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener, SeekBar.OnSeekBarChangeListener {
 
-    //private ImageButton backBtn, forvardBtn, folderBtn, rndBtn;
     private SeekBar timeScroll;
     private TextView rndText, trackTxt, folderTxt, timeTxt, longTxt;
     private ImageView playImg;
@@ -33,10 +35,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private Boolean rnd = false;
     private int curTreckID = 0;
+    final private String FIELD_ID = "Path";
 
     public static ArrayList<String> myMysicList;
     private FolderClass directoryList;
     private SharedPreferences saveMusicInfo;
+
+    private Resources res;
+    NotificationManager notificationManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ImageButton backBtn, forvardBtn, folderBtn, rndBtn;
 
         directoryList = new FolderClass();
+        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         timeScroll =(SeekBar) findViewById(R.id.seekBar);
         timeScroll.setOnSeekBarChangeListener(this);
@@ -71,11 +78,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         playImg =(ImageView) findViewById(R.id.imageView);
         playImg.setOnClickListener(this);
-        playImg.setImageResource(R.drawable.playgreen);
-
+        res = this.getResources();
         myMysicList = new ArrayList<>();
         rndText.setVisibility(View.INVISIBLE);
-        AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
         loadStartMusic();
     }
 
@@ -102,8 +107,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void loadStartMusic() {
-        String fileDir = saveMusicInfo.getString(getString(R.string.savePathMusic), "");
-        File inputFile = new File(fileDir);
+        File inputFile = new File(saveMusicInfo.getString(FIELD_ID, ""));
         if (inputFile.exists()) {
             curTreckID=directoryList.createList(inputFile.getParent(),inputFile.getName());
             loadMusic();
@@ -113,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     void saveMusicForRestar() {
         if (myMysicList.size() > 0) {
             SharedPreferences.Editor editor = saveMusicInfo.edit();
-            editor.putString(getString(R.string.savePathMusic), myMysicList.get(curTreckID));
+            editor.putString(FIELD_ID, myMysicList.get(curTreckID));
             editor.apply();
         }
     }
@@ -179,6 +183,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             switchPlayStop();
             timeScroll.setProgress(0);
             saveMusicForRestar();
+            playNotification();
         } else FolderClass.fileError(this);
     }
 
@@ -192,12 +197,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void switchPlayStop() {
         if (mediaPlayer != null){
             if (mediaPlayer.isPlaying()) {
-                playImg.setImageResource(R.drawable.playgreen);
+                playImg.setImageResource(R.drawable.black_play);
                 mediaPlayer.pause();
+                notificationManager.cancelAll();
             } else {
-                playImg.setImageResource(R.drawable.stop3);
+                playImg.setImageResource(R.drawable.black_pause);
                 mediaPlayer.start();
                 refreshPlayTime();
+                playNotification();
             }
         } else FolderClass.fileError(this);
     }
@@ -208,16 +215,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
-    public void onPrepared(MediaPlayer mediaPlayer){}
+    public void onPrepared(MediaPlayer mediaPlayer) {
+
+    }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         releaseMP();
+        notificationManager.cancelAll();
     }
 
     @Override
-    public void onProgressChanged(SeekBar seekBar, int i, boolean b) {timeTxt.setText(TimeBar.getTime(i));}
+    public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+        timeTxt.setText(TimeBar.getTime(i));
+    }
 
     @Override
     public void onStartTrackingTouch(SeekBar seekBar) {}
@@ -248,6 +260,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             timeScroll.setProgress(MainActivity.mediaPlayer.getCurrentPosition());
         }
     };
+
+    private void playNotification() {
+        MainNotification.getNotification(this, MainActivity.class, getResources(), notificationManager, trackTxt.getText().toString(), 0);
+    }
 
 }
 

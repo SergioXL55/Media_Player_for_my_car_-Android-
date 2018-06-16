@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import com.example.mymusic.R;
 
 import java.util.ArrayList;
@@ -17,7 +18,7 @@ public class RadioListAdapter extends BaseAdapter {
     private ArrayList<RadioStation> objects;
 
     public RadioListAdapter(Context context, ArrayList<RadioStation> products) {
-         objects = products;
+        objects = products;
         lInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
     @Override

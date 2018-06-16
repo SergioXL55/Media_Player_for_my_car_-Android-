@@ -1,12 +1,12 @@
 package com.example.mymusic.radio;
 
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
-import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -14,6 +14,8 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 
 import com.example.mymusic.R;
+import com.example.mymusic.folder.FolderClass;
+import com.example.mymusic.notification.MainNotification;
 import com.example.mymusic.radio.adapter.RadioListAdapter;
 import com.example.mymusic.radio.adapter.RadioStation;
 
@@ -23,37 +25,38 @@ import java.util.ArrayList;
 public class RadioActivity extends AppCompatActivity implements MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener, View.OnClickListener {
 
     public static ArrayList<RadioStation> radioList = new ArrayList<>();
+    NotificationManager notificationManager;
     ListView radioListView;
     Button bit64, bit128, bit320;
     ImageButton playBtn, stopBtn;
     String bitreit = "320";
     private MediaPlayer mediaPlayer;
-    AudioManager am;
     private int curentId = 0;
     RadioListAdapter myAdapter;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_radio);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        myRadioList();
+        createRadioList();
         myAdapter = new RadioListAdapter(this, radioList);
-        radioListView =(ListView) findViewById(R.id.radioListView);
+        radioListView = (ListView) findViewById(R.id.radioListView);
         radioListView.setAdapter(myAdapter);
+        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         bit64 = (Button) findViewById(R.id.bit64);
         bit64.setOnClickListener(this);
-        bit128 = (Button)findViewById(R.id.bit128);
+        bit128 = (Button) findViewById(R.id.bit128);
         bit128.setOnClickListener(this);
-        bit320 = (Button)findViewById(R.id.bit320);
+        bit320 = (Button) findViewById(R.id.bit320);
         bit320.setOnClickListener(this);
         playBtn = (ImageButton) findViewById(R.id.playBtn);
         playBtn.setOnClickListener(this);
-        stopBtn = (ImageButton)findViewById(R.id.pauseBtn);
+        stopBtn = (ImageButton) findViewById(R.id.pauseBtn);
         stopBtn.setOnClickListener(this);
 
-        am = (AudioManager) getSystemService(AUDIO_SERVICE);
         radioListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -72,7 +75,7 @@ public class RadioActivity extends AppCompatActivity implements MediaPlayer.OnCo
         mediaPlayer.start();
     }
 
-    private void myRadioList() {
+    private void createRadioList() {
         radioList.clear();
         radioList.add(new RadioStation("Record Remix ", "http://online.radiorecord.ru:8102/rmx_", R.drawable.radio, R.drawable.forvard));
         radioList.add(new RadioStation("Record Trancemission ", "http://online.radiorecord.ru:8102/tm_", R.drawable.radio, R.drawable.forvard));
@@ -106,12 +109,13 @@ public class RadioActivity extends AppCompatActivity implements MediaPlayer.OnCo
             mediaPlayer.setOnPreparedListener(this);
             mediaPlayer.prepareAsync();
         } catch (IOException e) {
-            Log.d("My", e.getMessage());
+            FolderClass.fileError(this);
         }
-        radioList.get(curentId).radioPlay=R.drawable.down;
+        radioList.get(curentId).radioPlay = R.drawable.down;
         mediaPlayer.setOnCompletionListener(this);
         setTitle(radioList.get(curentId).txt + " " + bitreit + " kbit/s");
         myAdapter.notifyDataSetChanged();
+        playNotification();
     }
 
     private void releaseMP() {
@@ -129,6 +133,7 @@ public class RadioActivity extends AppCompatActivity implements MediaPlayer.OnCo
     protected void onDestroy() {
         super.onDestroy();
         releaseMP();
+        notificationManager.cancelAll();
     }
 
     @Override
@@ -139,7 +144,7 @@ public class RadioActivity extends AppCompatActivity implements MediaPlayer.OnCo
     @Override
     public void onPrepared(MediaPlayer mediaPlayer) {
         mediaPlayer.start();
-        radioList.get(curentId).radioPlay=R.drawable.playgreen;
+        radioList.get(curentId).radioPlay = R.drawable.playgreen;
         myAdapter.notifyDataSetChanged();
     }
 
@@ -186,16 +191,22 @@ public class RadioActivity extends AppCompatActivity implements MediaPlayer.OnCo
         }
     }
 
-    void playStop() {
+    private void playStop() {
         if (mediaPlayer != null) {
             if (mediaPlayer.isPlaying()) {
                 mediaPlayer.pause();
                 radioList.get(curentId).radioPlay = R.drawable.pause;
+                notificationManager.cancelAll();
             } else {
                 mediaPlayer.start();
                 radioList.get(curentId).radioPlay = R.drawable.playgreen;
+                playNotification();
             }
         }
         myAdapter.notifyDataSetChanged();
+    }
+
+    private void playNotification() {
+        MainNotification.getNotification(this, RadioActivity.class, getResources(), notificationManager, getTitle().toString(), 1);
     }
 }

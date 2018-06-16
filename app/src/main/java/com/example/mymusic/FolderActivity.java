@@ -23,7 +23,7 @@ public class FolderActivity extends AppCompatActivity {
         setContentView(R.layout.activity_folder);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         directoryList=new FolderClass();
-        directoryList.createList(getString(R.string.defaultDirectory),"");
+        directoryList.getRealPathFromURI(this);
         boxAdapter = new BoxAdapter(this, FolderClass.products);
 
         lvMain = (ListView) findViewById(R.id.listFolder);

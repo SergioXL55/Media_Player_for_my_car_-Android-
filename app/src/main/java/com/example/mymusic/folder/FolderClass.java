@@ -5,7 +5,6 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
-import android.util.Log;
 import android.widget.Toast;
 
 import com.example.mymusic.MainActivity;
@@ -19,7 +18,8 @@ import java.util.Collections;
 public class FolderClass {
 
     public static ArrayList<Product> products = new ArrayList<>();
-    private final String FILEFILTER = ".mp3";
+    private final static String FILEFILTER = ".mp3";
+    private final static String FOLDER_TYPE = "0", FILE_TYPE = "1";
 
     public int createList(String dir,String fileName) {
         int id =0;
@@ -29,15 +29,44 @@ public class FolderClass {
         File[] images = imagesPath.listFiles();
         for (File i : images) {
             if (i.isDirectory())
-                products.add(new Product(i.getPath(), R.drawable.fold, "0"));
+                products.add(new Product(i.getPath(), R.drawable.fold, FOLDER_TYPE));
             else if (getType(i.getName()) == 1) {
-                products.add(new Product(i.getPath(), R.drawable.playgreen, "1"));
+                products.add(new Product(i.getPath(), R.drawable.playgreen, FILE_TYPE));
                 MainActivity.myMysicList.add(i.getPath());
                 if(i.getName().equals(fileName)) id =MainActivity.myMysicList.size()-1;
             }
         }
         Collections.sort(products);
         return id;
+    }
+
+    private void createFolderList(String inputFile) {
+        boolean needAddFolder = true;
+        if (products.size() == 0)
+            products.add(new Product(inputFile, R.drawable.fold, FOLDER_TYPE));
+        else {
+            for (Product p : products)
+                if (p.path.equals(inputFile)) {
+                    needAddFolder = false;
+                    break;
+                }
+            if (needAddFolder) products.add(new Product(inputFile, R.drawable.fold, FOLDER_TYPE));
+        }
+    }
+
+    public void getRealPathFromURI(Context con) {
+        products.clear();
+        Uri allaudiosong = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+        String audioselection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
+        Cursor cursor = con.getContentResolver().query(allaudiosong, new String[]{"*"}, audioselection, null, null);
+        if (cursor != null)
+            if (cursor.moveToFirst())
+                do {
+                    String fullpath = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
+                    File track = new File(fullpath);
+                    createFolderList(track.getParent());
+                } while (cursor.moveToNext());
+        cursor.close();
     }
 
     private int getType(String mystr) {
@@ -75,32 +104,4 @@ public class FolderClass {
         ts.show();
     }
 
-    //TODO переделать на автоматический поиск музыки на устройстве
-    public void getRealPathFromURI(Context con) {
-        String[] STAR = {"*"};
-        Uri allaudiosong = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        String audioselection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
-        Cursor cursor;
-        cursor = con.getContentResolver().query(allaudiosong, STAR, audioselection, null, null);
-
-        if (cursor != null)
-            if (cursor.moveToFirst())
-                do {
-                    String song_name = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME));
-                    Log.d("My", "Audio Song Name= " + song_name);
-
-                    int song_id = cursor.getInt(cursor.getColumnIndex(MediaStore.Audio.Media._ID));
-                    Log.d("My", "Audio Song Name= " + song_id);
-
-                    String fullpath = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
-                    Log.d("My", "Audio Song Name= " + fullpath);
-
-                    File track = new File(fullpath);
-                    Log.d("My", "Audio Parent= " + track.getParent());
-                    File foldername = new File(track.getParent());
-                    Log.d("My", "Audio Parent= " + foldername.getName());
-
-                } while (cursor.moveToNext());
-        cursor.close();
-    }
 }

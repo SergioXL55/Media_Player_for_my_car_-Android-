@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Car Music Player</string>
-    <string name="defaultDirectory">/storage/extSdCard/Music</string>
-
-    <string name="savePathMusic">Path</string>
+    <string name="folderNameActivity">Название папки</string>
+    <string name="trckNameActivity">Название трека</string>
+    <string name="sourceNameActivity">Выберите источник музыки</string>
+    <string name="autorTitleText">For Mazda 3 from Sergio</string>
 </resources>

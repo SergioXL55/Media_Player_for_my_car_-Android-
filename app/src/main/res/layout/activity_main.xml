@@ -24,7 +24,7 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.052"
-        app:srcCompat="@android:drawable/ic_media_play" />
+        app:srcCompat="@drawable/black_play" />
 
     <ImageButton
         android:id="@+id/backbtn"
@@ -107,7 +107,7 @@
         android:layout_marginRight="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
-        android:text="Название трека"
+        android:text="@string/trckNameActivity"
         android:textColor="@android:color/black"
         android:textSize="24sp"
         app:layout_constraintBottom_toTopOf="@+id/seekBar"
@@ -125,7 +125,7 @@
         android:layout_marginLeft="16dp"
         android:layout_marginRight="64dp"
         android:layout_marginStart="16dp"
-        android:text="Название папки"
+        android:text="@string/folderNameActivity"
         android:textColor="@android:color/background_dark"
         android:textSize="24sp"
         app:layout_constraintBottom_toTopOf="@+id/imageView"
