@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
-import android.content.res.Resources;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -41,7 +40,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private FolderClass directoryList;
     private SharedPreferences saveMusicInfo;
 
-    private Resources res;
     NotificationManager notificationManager;
 
     @Override
@@ -78,7 +76,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         playImg =(ImageView) findViewById(R.id.imageView);
         playImg.setOnClickListener(this);
-        res = this.getResources();
         myMysicList = new ArrayList<>();
         rndText.setVisibility(View.INVISIBLE);
         loadStartMusic();
