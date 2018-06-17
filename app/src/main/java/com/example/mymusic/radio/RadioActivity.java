@@ -34,7 +34,6 @@ public class RadioActivity extends AppCompatActivity implements MediaPlayer.OnCo
     private int curentId = 0;
     RadioListAdapter myAdapter;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
