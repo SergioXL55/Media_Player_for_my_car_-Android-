@@ -8,12 +8,17 @@ import android.content.pm.ActivityInfo;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.telephony.PhoneStateListener;
+import android.telephony.ServiceState;
+import android.telephony.TelephonyManager;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.example.mymusic.call.CallListener;
 import com.example.mymusic.folder.FolderClass;
 import com.example.mymusic.notification.MainNotification;
 import com.example.mymusic.time.TimeBar;
@@ -31,6 +36,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ImageView playImg;
     private Thread timeThread;
     public static MediaPlayer mediaPlayer;
+    private boolean needPlay = false;
 
     private Boolean rnd = false;
     private int curTreckID = 0;
@@ -39,6 +45,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public static ArrayList<String> myMysicList;
     private FolderClass directoryList;
     private SharedPreferences saveMusicInfo;
+    //private CallListener callListener = new CallListener(mediaPlayer);
+    private TelephonyManager mTelephonyManager;
 
     NotificationManager notificationManager;
 
@@ -47,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mTelephonyManager = (TelephonyManager) getSystemService(getApplicationContext().TELEPHONY_SERVICE);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         saveMusicInfo = getSharedPreferences(getString(R.string.app_name), MODE_PRIVATE);
 
@@ -55,31 +64,52 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         directoryList = new FolderClass();
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        timeScroll =(SeekBar) findViewById(R.id.seekBar);
+        timeScroll = (SeekBar) findViewById(R.id.seekBar);
         timeScroll.setOnSeekBarChangeListener(this);
 
-        rndText =(TextView) findViewById(R.id.rndText);
-        trackTxt =(TextView) findViewById(R.id.trackText);
-        folderTxt =(TextView) findViewById(R.id.folderText);
-        timeTxt = (TextView)findViewById(R.id.timeTxt);
-        longTxt = (TextView)findViewById(R.id.longText);
+        rndText = (TextView) findViewById(R.id.rndText);
+        trackTxt = (TextView) findViewById(R.id.trackText);
+        folderTxt = (TextView) findViewById(R.id.folderText);
+        timeTxt = (TextView) findViewById(R.id.timeTxt);
+        longTxt = (TextView) findViewById(R.id.longText);
 
-        rndBtn =(ImageButton) findViewById(R.id.rndBtn);
+        rndBtn = (ImageButton) findViewById(R.id.rndBtn);
         rndBtn.setOnClickListener(this);
-        backBtn =(ImageButton) findViewById(R.id.backbtn);
+        backBtn = (ImageButton) findViewById(R.id.backbtn);
         backBtn.setOnClickListener(this);
-        forvardBtn =(ImageButton) findViewById(R.id.forvardBtn);
+        forvardBtn = (ImageButton) findViewById(R.id.forvardBtn);
         forvardBtn.setOnClickListener(this);
-        folderBtn =(ImageButton) findViewById(R.id.folderBtn);
+        folderBtn = (ImageButton) findViewById(R.id.folderBtn);
         folderBtn.setOnClickListener(this);
         folderBtn.setImageResource(R.drawable.fold);
 
-        playImg =(ImageView) findViewById(R.id.imageView);
+        playImg = (ImageView) findViewById(R.id.imageView);
         playImg.setOnClickListener(this);
         myMysicList = new ArrayList<>();
         rndText.setVisibility(View.INVISIBLE);
         loadStartMusic();
     }
+
+    PhoneStateListener mPhoneStateListener = new PhoneStateListener() {
+        @Override
+        public void onCallStateChanged(int state, String incomingNumber) {
+            super.onCallStateChanged(state, incomingNumber);
+
+            switch (state) {
+                case TelephonyManager.CALL_STATE_IDLE:
+                    if(mediaPlayer!=null)
+                    if (needPlay && !mediaPlayer.isPlaying()) play();
+                    needPlay = false;
+                    break;
+                case TelephonyManager.CALL_STATE_RINGING:
+                    if(mediaPlayer!=null)
+                    if (mediaPlayer.isPlaying()) needPlay = true;
+                    pause();
+                    break;
+            }
+        }
+    };
+
 
     @Override
     public void onClick(View view) {
@@ -106,7 +136,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void loadStartMusic() {
         File inputFile = new File(saveMusicInfo.getString(FIELD_ID, ""));
         if (inputFile.exists()) {
-            curTreckID=directoryList.createList(inputFile.getParent(),inputFile.getName());
+            curTreckID = directoryList.createList(inputFile.getParent(), inputFile.getName());
             loadMusic();
         } else FolderClass.fileError(this);
     }
@@ -148,9 +178,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void rndSelect() {
-        if (rnd)  rndText.setVisibility(View.INVISIBLE);
-         else  rndText.setVisibility(View.VISIBLE);
-        rnd=!rnd;
+        if (rnd) rndText.setVisibility(View.INVISIBLE);
+        else rndText.setVisibility(View.VISIBLE);
+        rnd = !rnd;
     }
 
     private void releaseMP() {
@@ -192,18 +222,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void switchPlayStop() {
-        if (mediaPlayer != null){
+        if (mediaPlayer != null) {
             if (mediaPlayer.isPlaying()) {
-                playImg.setImageResource(R.drawable.black_play);
-                mediaPlayer.pause();
-                notificationManager.cancelAll();
+                pause();
             } else {
-                playImg.setImageResource(R.drawable.black_pause);
-                mediaPlayer.start();
-                refreshPlayTime();
-                playNotification();
+                play();
             }
         } else FolderClass.fileError(this);
+    }
+
+    private void pause() {
+        if (mediaPlayer.isPlaying()) {
+            playImg.setImageResource(R.drawable.black_play);
+            mediaPlayer.pause();
+            notificationManager.cancelAll();
+        }
+    }
+
+    private void play() {
+        playImg.setImageResource(R.drawable.black_pause);
+        mediaPlayer.start();
+        refreshPlayTime();
+        playNotification();
     }
 
     @Override
@@ -219,6 +259,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        mTelephonyManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_NONE);
         releaseMP();
         notificationManager.cancelAll();
     }
@@ -229,7 +270,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
-    public void onStartTrackingTouch(SeekBar seekBar) {}
+    public void onStartTrackingTouch(SeekBar seekBar) {
+    }
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
@@ -261,6 +303,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void playNotification() {
         MainNotification.getNotification(this, MainActivity.class, getResources(), notificationManager, trackTxt.getText().toString(), 0);
     }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mTelephonyManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+    }
+
+
 
 }
 

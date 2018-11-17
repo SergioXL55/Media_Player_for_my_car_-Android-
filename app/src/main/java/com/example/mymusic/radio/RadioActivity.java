@@ -7,6 +7,8 @@ import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -33,6 +35,8 @@ public class RadioActivity extends AppCompatActivity implements MediaPlayer.OnCo
     private MediaPlayer mediaPlayer;
     private int curentId = 0;
     RadioListAdapter myAdapter;
+    private boolean needPlay=false;
+    private TelephonyManager mTelephonyManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +59,8 @@ public class RadioActivity extends AppCompatActivity implements MediaPlayer.OnCo
         playBtn.setOnClickListener(this);
         stopBtn = (ImageButton) findViewById(R.id.pauseBtn);
         stopBtn.setOnClickListener(this);
+
+        mTelephonyManager = (TelephonyManager) getSystemService(getApplicationContext().TELEPHONY_SERVICE);
 
         radioListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -131,6 +137,7 @@ public class RadioActivity extends AppCompatActivity implements MediaPlayer.OnCo
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        mTelephonyManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_NONE);
         releaseMP();
         notificationManager.cancelAll();
     }
@@ -193,19 +200,53 @@ public class RadioActivity extends AppCompatActivity implements MediaPlayer.OnCo
     private void playStop() {
         if (mediaPlayer != null) {
             if (mediaPlayer.isPlaying()) {
-                mediaPlayer.pause();
-                radioList.get(curentId).radioPlay = R.drawable.pause;
-                notificationManager.cancelAll();
+                    pause();
             } else {
-                mediaPlayer.start();
-                radioList.get(curentId).radioPlay = R.drawable.playgreen;
-                playNotification();
+                play();
             }
         }
         myAdapter.notifyDataSetChanged();
     }
 
+    private void play(){
+        mediaPlayer.start();
+        radioList.get(curentId).radioPlay = R.drawable.playgreen;
+        playNotification();
+    }
+
+    private void pause(){
+        mediaPlayer.pause();
+        radioList.get(curentId).radioPlay = R.drawable.pause;
+        notificationManager.cancelAll();
+    }
+
     private void playNotification() {
         MainNotification.getNotification(this, RadioActivity.class, getResources(), notificationManager, getTitle().toString(), 1);
+    }
+
+    PhoneStateListener mPhoneStateListener = new PhoneStateListener() {
+        @Override
+        public void onCallStateChanged(int state, String incomingNumber) {
+            super.onCallStateChanged(state, incomingNumber);
+
+            switch (state) {
+                case TelephonyManager.CALL_STATE_IDLE:
+                    if(mediaPlayer!=null)
+                        if (needPlay && !mediaPlayer.isPlaying()) play();
+                    needPlay = false;
+                    break;
+                case TelephonyManager.CALL_STATE_RINGING:
+                    if(mediaPlayer!=null)
+                        if (mediaPlayer.isPlaying()) needPlay = true;
+                    pause();
+                    break;
+            }
+        }
+    };
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mTelephonyManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
     }
 }
